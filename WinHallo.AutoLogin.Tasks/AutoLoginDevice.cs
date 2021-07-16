@@ -8,8 +8,8 @@ using Windows.Security.Cryptography.Core;
 using Windows.Storage.Streams;
 
 
-namespace Tasks {
-    public sealed class MyDevice {
+namespace WinHallo.AutoLogin.Tasks {
+    public sealed class AutoLoginDevice {
         public string DeviceId { get; } = "6a2877cd-8706-4e0c-bb78-181391ad8100";
 
         public string FriendlyName { get; } = "Test Simulator";
@@ -18,7 +18,7 @@ namespace Tasks {
         public IBuffer AuthKey { get; }
         public IBuffer DeviceKey { get; }
 
-        public MyDevice()
+        public AutoLoginDevice()
         {
             DeviceKey = CryptographicBuffer.DecodeFromHexString("1820614efeb71dbaebc315801a2782df26c236e0395f24fbe96344785fbe1a35");
             AuthKey = CryptographicBuffer.DecodeFromHexString("ad76bd149e4762dcd36725f2a5b86d0e5fd1058f7670415b9b5088354d1dd07f");

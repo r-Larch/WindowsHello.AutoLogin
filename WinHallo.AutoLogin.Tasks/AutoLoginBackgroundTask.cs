@@ -9,8 +9,8 @@ using Windows.Storage;
 using Windows.UI.Notifications;
 
 
-namespace Tasks {
-    public sealed class myBGTask : IBackgroundTask {
+namespace WinHallo.AutoLogin.Tasks {
+    public sealed class AutoLoginBackgroundTask : IBackgroundTask {
         private ManualResetEvent _opCompletedEvent;
         private readonly Logger _log = new Logger();
 
@@ -67,7 +67,7 @@ namespace Tasks {
             var device = devices.FirstOrDefault(_ => _.DeviceId == deviceId);
 
             if (device == null) {
-                ShowToastNotification($"Device Not Found - ID:{deviceId}");
+                ShowToastNotification($"Device Not Found - ID:{deviceId ?? "<null>"}");
                 return;
             }
 
@@ -83,7 +83,7 @@ namespace Tasks {
                 return;
             }
 
-            var hmac = MyDevice.RunAuthentication(
+            var hmac = AutoLoginDevice.RunAuthentication(
                 sessionNonce: authResult.Authentication.SessionNonce,
                 deviceNonce: authResult.Authentication.DeviceNonce,
                 deviceConfigData: authResult.Authentication.DeviceConfigurationData

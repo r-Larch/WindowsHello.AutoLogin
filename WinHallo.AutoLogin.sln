@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31424.327
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDFSampleApp", "CDFSampleApp\CDFSampleApp.csproj", "{9FDD0FF8-7487-428F-8325-D247F2CD3923}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHallo.AutoLogin", "WinHallo.AutoLogin\WinHallo.AutoLogin.csproj", "{9FDD0FF8-7487-428F-8325-D247F2CD3923}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tasks", "Tasks\Tasks.csproj", "{CEA8E664-3E8B-4188-808B-BA20B2BE278E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHallo.AutoLogin.Tasks", "WinHallo.AutoLogin.Tasks\WinHallo.AutoLogin.Tasks.csproj", "{CEA8E664-3E8B-4188-808B-BA20B2BE278E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6BF5694E-B47A-43ED-BDB9-A6CA9D52868F}"
 	ProjectSection(SolutionItems) = preProject

@@ -3,12 +3,14 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 
-namespace Tasks {
+namespace WinHallo.AutoLogin.Tasks {
     internal class Logger {
-        private const string Path = @"C:\temp\log.txt";
+        // private const string Path = @"C:\temp\log.txt";
 
         internal void Log(string message, [CallerMemberName] string member = null)
         {
+            // no permission to access filesystem or event log 😢
+
             //if (!File.Exists(Path)) {
             //    File.Create(Path);
             //}

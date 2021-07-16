@@ -1,27 +1,19 @@
-# Windows Hello Unlock using Companion Devices
+# CDF Sample App
 
-Welcome to the Companion Device Framework Github Repostiory. 
+The sample demonstrates how you can use the CDF APIs to build a UWP app to unlock a Windows PC using a companion device.  For the sake of simplicity and ease, the sample does a lot of operations (like key generation, HMAC operations, etc.) in this sample itself on the PC i.e., making the PC itself as the companion device.   When you implement your own UWP app, please use a transport (like BT, NFC, etc.) to talk to a companion device and have the companion device do some of these operations especially the key generaiton, key storage and HMAC operation.
 
-## Introduction
+In the Sample
+-------------
+The sample has two components - foreground and background task.   
 
-This repo hosts Windows UWP sample code to illustrate the use of Companion Device Framework (CDF), a new feature in Windows 10, enabling developers to build UWP apps to unlock Windows 10 PCs. A companion device is a device that can act in conjunction with your Windows 10 desktop to enhance the user authentication experience. Using the Companion Device Framework, a companion device can provide a rich experience for Microsoft Passport even when Windows Hello is not available (e.g., if the Windows 10 desktop lacks a camera for face authentication or fingerprint reader device, for example).
+1. The foreground component registers the background task and registers the companion device to be used for Windows unlock.  
 
-## Requirements
+2. The background component does the actual auth operation and hence, performs the unlock.
 
-- Windows 10 Anniversary Update Enterprise/Professional edition (Build 10.0.14393 or later)
-- Visual Studio 2015
-- [Windows Software Development Kit (SDK) for Windows 10] (https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
+Before using the sample
+-----------------------
+When you use the sample code, please do the following:
 
-## Requesting capabilities for Store Submissions of your CDF UWP App
-
-You are free to use the code sample to create your own CDF UWP app to unlock Windows PCs.  To submit your app to the Store, you would need permissions to use the secondaryAuthenticationFactor restricted capability.    For the same, please mail Companion Device Framework Onboarding <CDFOnboard@microsoft.com>.
-
-## Feedback
-
-- File a bug in [GitHub Issues] (https://github.com/Microsoft/companion-device-framework/issues)
-- For requesting new features, please mail Companion Device Framework Onboarding <CDFOnboard@microsoft.com>.
-
-## Additional resources
-
-- [Introduction] (https://msdn.microsoft.com/en-us/windows/uwp/security/companion-device-unlock) to Windows Hello Companion Device Framework
-- [Video preview] (https://channel9.msdn.com/events/build/2016/p491) of Windows Hello Companion Device Framework
+1. Setup PIN auth/PIN based logon on your PC
+You should use Settings app-> Accounts -> Sign-in Options to set the PIN for your PC.
+If for some reason, PIN based logon is disabled on your PC, you may be able to either use gpedit.msc or set reg key. This setting can be enabled by creating the AllowDomainPINLogon REG_DWORD value under the HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System Registry key and setting it to 1.

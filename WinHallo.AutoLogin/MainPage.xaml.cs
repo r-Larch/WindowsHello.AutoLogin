@@ -10,14 +10,11 @@ using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
-using Tasks;
+using WinHallo.AutoLogin.Tasks;
 
 
-namespace CDFSampleApp_Ashish {
+namespace WinHallo.AutoLogin {
     public sealed partial class MainPage : Page {
-        private const string MyBgTaskName = "myBGTask";
-        private const string MyBgTaskEntryPoint = "Tasks.myBGTask";
-
         internal string SelectedDeviceId {
             get => ApplicationData.Current.LocalSettings.Values["SelectedDevice"] as string;
             set => ApplicationData.Current.LocalSettings.Values["SelectedDevice"] = value;
@@ -52,7 +49,7 @@ namespace CDFSampleApp_Ashish {
 
         private async void RegisterDevice_Click(object sender, RoutedEventArgs e)
         {
-            var device = new MyDevice();
+            var device = new AutoLoginDevice();
 
             var registration = await SecondaryAuthenticationFactorRegistration.RequestStartRegisteringDeviceAsync(
                 device.DeviceId,
@@ -79,14 +76,20 @@ namespace CDFSampleApp_Ashish {
                     await new MessageDialog("Please setup PIN for your device and try again.").ShowAsync();
                     return;
                 }
+
+                if (registration.Status == SecondaryAuthenticationFactorRegistrationStatus.CanceledByUser) {
+                    return;
+                }
             }
+            else {
+                Debug.WriteLine("Device Registration Started!");
 
-            Debug.WriteLine("Device Registration Started!");
+                var deviceConfigData = device.GetConfigData();
 
-            var deviceConfigData = device.GetConfigData();
-            await registration.Registration.FinishRegisteringDeviceAsync(deviceConfigData);
+                await registration.Registration.FinishRegisteringDeviceAsync(deviceConfigData);
 
-            await RefreshDeviceList();
+                await RefreshDeviceList();
+            }
         }
 
 
@@ -123,8 +126,10 @@ namespace CDFSampleApp_Ashish {
             BackgroundExecutionManager.RemoveAccess();
             var access = await BackgroundExecutionManager.RequestAccessAsync();
 
+            var taskType = typeof(WinHallo.AutoLogin.Tasks.AutoLoginBackgroundTask);
+
             foreach (var task in BackgroundTaskRegistration.AllTasks) {
-                if (task.Value.Name == MyBgTaskName) {
+                if (task.Value.Name == taskType.Name) {
                     task.Value.Unregister(true);
                     break;
                 }
@@ -132,8 +137,8 @@ namespace CDFSampleApp_Ashish {
 
             if (access == BackgroundAccessStatus.AllowedSubjectToSystemPolicy) {
                 var builder = new BackgroundTaskBuilder {
-                    Name = MyBgTaskName,
-                    TaskEntryPoint = MyBgTaskEntryPoint,
+                    Name = taskType.Name,
+                    TaskEntryPoint = taskType.FullName,
                 };
 
                 builder.SetTrigger(new SecondaryAuthenticationFactorAuthenticationTrigger());

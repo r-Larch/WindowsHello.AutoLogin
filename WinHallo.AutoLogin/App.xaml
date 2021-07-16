@@ -1,8 +1,8 @@
 ﻿<Application
-    x:Class="CDFSampleApp_Ashish.App"
+    x:Class="WinHallo.AutoLogin.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:CDFSampleApp_Ashish"
+    xmlns:local="using:WinHallo.AutoLogin"
     RequestedTheme="Light">
 
 </Application>
