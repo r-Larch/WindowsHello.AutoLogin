@@ -9,28 +9,30 @@
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition />
         </Grid.ColumnDefinitions>
 
         <StackPanel>
-            <ListBox x:Name="DeviceListBox" HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="200" />
-
             <Button x:Name="RegisterDevice" Content="Step 1 Register Device" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Width="200" Click="RegisterDevice_Click" />
+                    VerticalAlignment="Top" Margin="5" Click="RegisterDevice_Click" />
 
             <Button x:Name="RegisterBgTask" Content="Step 2 Register BGTask" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Width="200" Click="RegisterBgTask_Click" />
+                    VerticalAlignment="Top" Margin="5" Click="RegisterBgTask_Click" />
 
             <Button x:Name="UnregisterDevice" Content="Unregister Device" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Width="200" Click="UnregisterDevice_Click" />
+                    VerticalAlignment="Top" Margin="5" Click="UnregisterDevice_Click" />
 
-            <!--<ListBox x:Name="InfoList" HorizontalAlignment="Left" Height="329" Margin="32,295,0,0" VerticalAlignment="Top" Width="764"/>-->
+            <TextBlock Margin="10">Select Device:</TextBlock>
+            <ListBox SelectionChanged="DeviceListBox_OnSelectionChanged"
+                SelectedItem="{x:Bind SelectedDeviceId}"
+                x:Name="DeviceListBox" HorizontalAlignment="Left" VerticalAlignment="Top" Height="400px" />
         </StackPanel>
 
-        <StackPanel Grid.Column="1">
-            <!--<TextBox x:Name="Block1" />
-            <TextBox x:Name="Block2" />-->
+        <StackPanel Grid.Column="1" Padding="10">
+
+            <TextBlock>Using Device: </TextBlock>
+            <TextBlock x:Name="SelectedDevice" />
 
             <TextBlock x:Name="TaskRegistered" Foreground="Green" Visibility="Collapsed">
                 Task Registered

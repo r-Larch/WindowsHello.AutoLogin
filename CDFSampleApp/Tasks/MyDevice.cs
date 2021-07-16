@@ -91,8 +91,6 @@ namespace Tasks {
 
             var deviceHmac = CryptographicEngine.Sign(hMACSha256Provider.CreateKey(deviceKey), deviceNonce);
 
-            // sessionHmac = HMAC(authKey, deviceHmac || sessionNonce)
-
             byte[] deviceHmacArray = {0};
             CryptographicBuffer.CopyToByteArray(deviceHmac, out deviceHmacArray);
 

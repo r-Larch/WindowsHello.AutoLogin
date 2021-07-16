@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Background;
 using Windows.ApplicationModel.Core;
 using Windows.Security.Authentication.Identity.Provider;
-using Windows.Security.Cryptography;
 using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Popups;
@@ -19,13 +17,12 @@ namespace CDFSampleApp_Ashish {
     public sealed partial class MainPage : Page {
         private const string MyBgTaskName = "myBGTask";
         private const string MyBgTaskEntryPoint = "Tasks.myBGTask";
-        private string _mSelectedDeviceId = string.Empty;
+
 
         public MainPage()
         {
             InitializeComponent();
-
-            DeviceListBox.SelectionChanged += DeviceListBox_SelectionChanged;
+            DataContext = this;
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -41,8 +38,7 @@ namespace CDFSampleApp_Ashish {
 
             DeviceListBox.Items.Clear();
 
-            for (var index = 0; index < deviceList.Count; ++index) {
-                var deviceInfo = deviceList.ElementAt(index);
+            foreach (var deviceInfo in deviceList) {
                 DeviceListBox.Items.Add(deviceInfo.DeviceId);
             }
         }
@@ -83,41 +79,24 @@ namespace CDFSampleApp_Ashish {
             var deviceConfigData = device.GetConfigData();
             await registration.Registration.FinishRegisteringDeviceAsync(deviceConfigData);
 
-            DeviceListBox.Items.Add(device.DeviceId);
-            Debug.WriteLine("Device Registration is Complete!");
-
             await RefreshDeviceList();
         }
 
-        private void DeviceListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (DeviceListBox.Items.Count > 0) {
-                _mSelectedDeviceId = DeviceListBox.SelectedItem.ToString();
-            }
-            else {
-                _mSelectedDeviceId = string.Empty;
-            }
 
-            Debug.WriteLine("The device " + _mSelectedDeviceId + " is selected.");
+        internal string SelectedDeviceId { get; set; }
 
-            //Store the selected device in settings to be used in the BG task
-            var localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["SelectedDevice"] = _mSelectedDeviceId;
-        }
 
         private async void UnregisterDevice_Click(object sender, RoutedEventArgs e)
         {
-            if (_mSelectedDeviceId == string.Empty) {
-                return;
+            if (!string.IsNullOrEmpty(SelectedDeviceId)) {
+                //InfoList.Items.Add("Unregister a device:");
+
+                await SecondaryAuthenticationFactorRegistration.UnregisterDeviceAsync(SelectedDeviceId);
+
+                //InfoList.Items.Add("Device unregistration is completed.");
+
+                await RefreshDeviceList();
             }
-
-            //InfoList.Items.Add("Unregister a device:");
-
-            await SecondaryAuthenticationFactorRegistration.UnregisterDeviceAsync(_mSelectedDeviceId);
-
-            //InfoList.Items.Add("Device unregistration is completed.");
-
-            await RefreshDeviceList();
         }
 
 
@@ -172,6 +151,15 @@ namespace CDFSampleApp_Ashish {
                     });
                 };
             }
+        }
+
+
+        private void DeviceListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            SelectedDevice.Text = SelectedDeviceId = DeviceListBox.SelectedItem?.ToString() ?? string.Empty;
+
+            var localSettings = ApplicationData.Current.LocalSettings;
+            localSettings.Values["SelectedDevice"] = SelectedDeviceId;
         }
     }
 }
