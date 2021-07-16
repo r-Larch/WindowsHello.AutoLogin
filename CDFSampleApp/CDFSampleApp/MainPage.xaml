@@ -38,6 +38,10 @@
                 Task Registered
             </TextBlock>
 
+            <TextBlock x:Name="ErrorMsg" Foreground="Red" Visibility="Collapsed">
+                Error: No Device Selected!
+            </TextBlock>
+
         </StackPanel>
     </Grid>
 </Page>

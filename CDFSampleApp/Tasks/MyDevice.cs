@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Security.Cryptography;
 using Windows.Security.Cryptography.Core;
 using Windows.Storage.Streams;
@@ -6,17 +10,15 @@ using Windows.Storage.Streams;
 
 namespace Tasks {
     public sealed class MyDevice {
-        public static MyDevice Default { get; } = new MyDevice();
-
         public string DeviceId { get; } = "6a2877cd-8706-4e0c-bb78-181391ad8100";
-
-        public IBuffer AuthKey { get; }
-        public IBuffer DeviceKey { get; }
 
         public string FriendlyName { get; } = "Test Simulator";
         public string ModelNumber { get; } = "Sample A1";
 
-        private MyDevice()
+        public IBuffer AuthKey { get; }
+        public IBuffer DeviceKey { get; }
+
+        public MyDevice()
         {
             DeviceKey = CryptographicBuffer.DecodeFromHexString("1820614efeb71dbaebc315801a2782df26c236e0395f24fbe96344785fbe1a35");
             AuthKey = CryptographicBuffer.DecodeFromHexString("ad76bd149e4762dcd36725f2a5b86d0e5fd1058f7670415b9b5088354d1dd07f");
@@ -25,29 +27,7 @@ namespace Tasks {
 
         public IBuffer GetConfigData()
         {
-            //
-            // WARNING: Test code
-            // The keys SHOULD NOT be saved into device config data
-            //
-            byte[] deviceKeyArray = {0};
-            CryptographicBuffer.CopyToByteArray(DeviceKey, out deviceKeyArray);
-
-            byte[] authKeyArray = {0};
-            CryptographicBuffer.CopyToByteArray(AuthKey, out authKeyArray);
-
-            //Generate combinedDataArray
-            var combinedDataArraySize = deviceKeyArray.Length + authKeyArray.Length;
-            var combinedDataArray = new byte[combinedDataArraySize];
-            for (var index = 0; index < deviceKeyArray.Length; index++) {
-                combinedDataArray[index] = deviceKeyArray[index];
-            }
-
-            for (var index = 0; index < authKeyArray.Length; index++) {
-                combinedDataArray[deviceKeyArray.Length + index] = authKeyArray[index];
-            }
-
-            // Get a Ibuffer from combinedDataArray
-            var deviceConfigData = CryptographicBuffer.CreateFromByteArray(combinedDataArray);
+            var deviceConfigData = Concat(DeviceKey, AuthKey);
 
             return deviceConfigData;
         }
@@ -60,62 +40,54 @@ namespace Tasks {
         /// </summary>
         public static AuthResult RunAuthentication(IBuffer sessionNonce, IBuffer deviceNonce, IBuffer deviceConfigData)
         {
-            // var (deviceKey, authKey) = parse(deviceConfigData);
+            var sha256 = MacAlgorithmProvider.OpenAlgorithm(MacAlgorithmNames.HmacSha256);
 
-            // var deviceHmac = HMAC(deviceKey, deviceNonce)
-            // var sessionHmac = HMAC(authKey, deviceHmac + sessionNonce)
+            var (deviceKey, authKey) = Split(deviceConfigData);
 
-            //
-            // WARNING: Test code
-            // The HAMC calculation SHOULD be done on companion device
-            //
-            CryptographicBuffer.CopyToByteArray(deviceConfigData, out var combinedDataArray);
-
-            var deviceKeyArray = new byte[32];
-            var authKeyArray = new byte[32];
-
-            for (var index = 0; index < deviceKeyArray.Length; index++) {
-                deviceKeyArray[index] = combinedDataArray[index];
-            }
-
-            for (var index = 0; index < authKeyArray.Length; index++) {
-                authKeyArray[index] = combinedDataArray[deviceKeyArray.Length + index];
-            }
-
-            // Create device key and authentication key
-            var deviceKey = CryptographicBuffer.CreateFromByteArray(deviceKeyArray);
-            var authKey = CryptographicBuffer.CreateFromByteArray(authKeyArray);
-
-            // Calculate the HMAC
-            var hMACSha256Provider = MacAlgorithmProvider.OpenAlgorithm(MacAlgorithmNames.HmacSha256);
-
-            var deviceHmac = CryptographicEngine.Sign(hMACSha256Provider.CreateKey(deviceKey), deviceNonce);
-
-            byte[] deviceHmacArray = {0};
-            CryptographicBuffer.CopyToByteArray(deviceHmac, out deviceHmacArray);
-
-            byte[] sessionNonceArray = {0};
-            CryptographicBuffer.CopyToByteArray(sessionNonce, out sessionNonceArray);
-
-            combinedDataArray = new byte[deviceHmacArray.Length + sessionNonceArray.Length];
-            for (var index = 0; index < deviceHmacArray.Length; index++) {
-                combinedDataArray[index] = deviceHmacArray[index];
-            }
-
-            for (var index = 0; index < sessionNonceArray.Length; index++) {
-                combinedDataArray[deviceHmacArray.Length + index] = sessionNonceArray[index];
-            }
-
-            // Get a Ibuffer from combinedDataArray
-            var sessionMessage = CryptographicBuffer.CreateFromByteArray(combinedDataArray);
-
-            // Calculate sessionHmac
-            var sessionHmac = CryptographicEngine.Sign(hMACSha256Provider.CreateKey(authKey), sessionMessage);
+            var deviceHmac = Hmac(sha256, key: deviceKey, data: deviceNonce);
+            var sessionHmac = Hmac(sha256, key: authKey, data: Concat(deviceHmac, sessionNonce));
 
             return new AuthResult {
                 DeviceHmac = deviceHmac,
                 SessionHmac = sessionHmac,
             };
+        }
+
+
+        private static IBuffer Concat(params IBuffer[] buffers)
+        {
+            var count = buffers.Sum(_ => _.Length);
+            var result = new byte[count];
+            var i = 0;
+            foreach (var buffer in buffers) {
+                var src = buffer.ToArray();
+                Array.Copy(src, 0, result, i, src.Length);
+                i = src.Length;
+            }
+
+            return CryptographicBuffer.CreateFromByteArray(result);
+        }
+
+        private static (IBuffer deviceKey, IBuffer authKey) Split(IBuffer deviceConfigData)
+        {
+            if (deviceConfigData.Length != 64) {
+                throw new Exception("Invalid deviceConfigData; Expected 64 bytes!");
+            }
+
+            var deviceKey = new byte[32];
+            var authKey = new byte[32];
+            deviceConfigData.CopyTo(0, deviceKey, 0, 32);
+            deviceConfigData.CopyTo(32, authKey, 0, 32);
+
+            return (
+                deviceKey: CryptographicBuffer.CreateFromByteArray(deviceKey),
+                authKey: CryptographicBuffer.CreateFromByteArray(authKey)
+            );
+        }
+
+        private static IBuffer Hmac(MacAlgorithmProvider provider, IBuffer key, IBuffer data)
+        {
+            return CryptographicEngine.Sign(provider.CreateKey(key), data);
         }
     }
 

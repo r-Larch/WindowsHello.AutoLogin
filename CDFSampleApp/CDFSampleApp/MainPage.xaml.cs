@@ -18,6 +18,10 @@ namespace CDFSampleApp_Ashish {
         private const string MyBgTaskName = "myBGTask";
         private const string MyBgTaskEntryPoint = "Tasks.myBGTask";
 
+        internal string SelectedDeviceId {
+            get => ApplicationData.Current.LocalSettings.Values["SelectedDevice"] as string;
+            set => ApplicationData.Current.LocalSettings.Values["SelectedDevice"] = value;
+        }
 
         public MainPage()
         {
@@ -40,12 +44,15 @@ namespace CDFSampleApp_Ashish {
 
             foreach (var deviceInfo in deviceList) {
                 DeviceListBox.Items.Add(deviceInfo.DeviceId);
+                if (SelectedDeviceId == deviceInfo.DeviceId) {
+                    DeviceListBox.SelectedItem = deviceInfo.DeviceId;
+                }
             }
         }
 
         private async void RegisterDevice_Click(object sender, RoutedEventArgs e)
         {
-            var device = MyDevice.Default;
+            var device = new MyDevice();
 
             var registration = await SecondaryAuthenticationFactorRegistration.RequestStartRegisteringDeviceAsync(
                 device.DeviceId,
@@ -83,9 +90,6 @@ namespace CDFSampleApp_Ashish {
         }
 
 
-        internal string SelectedDeviceId { get; set; }
-
-
         private async void UnregisterDevice_Click(object sender, RoutedEventArgs e)
         {
             if (!string.IsNullOrEmpty(SelectedDeviceId)) {
@@ -109,11 +113,12 @@ namespace CDFSampleApp_Ashish {
         private async void RegisterTask()
         {
             TaskRegistered.Visibility = Visibility.Collapsed;
+            ErrorMsg.Visibility = Visibility.Collapsed;
 
-            Debug.WriteLine("Register the background task.");
-            //
-            // Check for existing registrations of this background task.
-            //
+            if (string.IsNullOrEmpty(SelectedDeviceId)) {
+                ErrorMsg.Visibility = Visibility.Visible;
+                return;
+            }
 
             BackgroundExecutionManager.RemoveAccess();
             var access = await BackgroundExecutionManager.RequestAccessAsync();
@@ -150,6 +155,8 @@ namespace CDFSampleApp_Ashish {
                         TaskRegistered.Visibility = Visibility.Visible;
                     });
                 };
+
+                TaskRegistered.Visibility = Visibility.Visible;
             }
         }
 
@@ -157,9 +164,6 @@ namespace CDFSampleApp_Ashish {
         private void DeviceListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             SelectedDevice.Text = SelectedDeviceId = DeviceListBox.SelectedItem?.ToString() ?? string.Empty;
-
-            var localSettings = ApplicationData.Current.LocalSettings;
-            localSettings.Values["SelectedDevice"] = SelectedDeviceId;
         }
     }
 }
