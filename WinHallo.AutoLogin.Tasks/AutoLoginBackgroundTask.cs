@@ -60,8 +60,7 @@ namespace WinHallo.AutoLogin.Tasks {
                 return;
             }
 
-            var localSettings = ApplicationData.Current.LocalSettings;
-            var deviceId = localSettings.Values["SelectedDevice"] as string;
+            var deviceId = ApplicationData.Current.LocalSettings.Values["SelectedDevice"] as string;
 
             var devices = await SecondaryAuthenticationFactorRegistration.FindAllRegisteredDeviceInfoAsync(SecondaryAuthenticationFactorDeviceFindScope.AllUsers);
             var device = devices.FirstOrDefault(_ => _.DeviceId == deviceId);

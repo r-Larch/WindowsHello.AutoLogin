@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Windows.ApplicationModel.Background;
-using Windows.ApplicationModel.Core;
 using Windows.Security.Authentication.Identity.Provider;
 using Windows.Storage;
-using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -23,6 +21,7 @@ namespace WinHallo.AutoLogin {
         public MainPage()
         {
             InitializeComponent();
+
             DataContext = this;
         }
 
@@ -31,6 +30,7 @@ namespace WinHallo.AutoLogin {
             base.OnNavigatedTo(e);
 
             await RefreshDeviceList();
+            DeviceListBox_OnSelectionChanged(null, null);
         }
 
         private async Task RefreshDeviceList()
@@ -39,17 +39,36 @@ namespace WinHallo.AutoLogin {
 
             DeviceListBox.Items.Clear();
 
-            foreach (var deviceInfo in deviceList) {
-                DeviceListBox.Items.Add(deviceInfo.DeviceId);
-                if (SelectedDeviceId == deviceInfo.DeviceId) {
-                    DeviceListBox.SelectedItem = deviceInfo.DeviceId;
+            var remove = new Command<ListDevice>(async device => {
+                await SecondaryAuthenticationFactorRegistration.UnregisterDeviceAsync(device.DeviceId);
+
+                if (SelectedDeviceId == device.DeviceId) {
+                    SelectedDeviceId = null;
+                }
+
+                await RefreshDeviceList();
+            });
+
+            foreach (var device in deviceList) {
+                var item = new ListDevice {
+                    DeviceId = device.DeviceId,
+                    Name = $"{device.DeviceFriendlyName} {device.DeviceModelNumber}",
+                    RemoveDeviceCommand = remove,
+                };
+
+                DeviceListBox.Items.Add(item);
+
+                if (SelectedDeviceId == item.DeviceId) {
+                    DeviceListBox.SelectedItem = item;
                 }
             }
         }
 
         private async void RegisterDevice_Click(object sender, RoutedEventArgs e)
         {
-            var device = new AutoLoginDevice();
+            var device = AutoLoginDevice.NewRandomDevice("Auto Login Device", "v1");
+            var deviceConfigData = device.GetConfigData();
+
 
             var registration = await SecondaryAuthenticationFactorRegistration.RequestStartRegisteringDeviceAsync(
                 device.DeviceId,
@@ -60,49 +79,32 @@ namespace WinHallo.AutoLogin {
                 device.AuthKey
             );
 
-            if (registration.Status != SecondaryAuthenticationFactorRegistrationStatus.Started) {
-                if (registration.Status == SecondaryAuthenticationFactorRegistrationStatus.DisabledByPolicy) {
+
+            switch (registration.Status) {
+                case SecondaryAuthenticationFactorRegistrationStatus.Started:
+                    await registration.Registration.FinishRegisteringDeviceAsync(deviceConfigData);
+
+                    if (string.IsNullOrEmpty(SelectedDeviceId)) {
+                        SelectedDeviceId = device.DeviceId;
+                    }
+
+                    await RefreshDeviceList();
+                    break;
+                case SecondaryAuthenticationFactorRegistrationStatus.DisabledByPolicy:
                     //For DisaledByPolicy Exception:Ensure secondary auth is enabled.
                     //Use GPEdit.msc to update group policy to allow secondary auth
                     //Local Computer Policy\Computer Configuration\Administrative Templates\Windows Components\Microsoft Secondary Authentication Factor\Allow Companion device for secondary authentication
                     await new MessageDialog("Disabled by Policy.  Please update the policy and try again.").ShowAsync();
-                    return;
-                }
-
-                if (registration.Status == SecondaryAuthenticationFactorRegistrationStatus.PinSetupRequired) {
+                    break;
+                case SecondaryAuthenticationFactorRegistrationStatus.PinSetupRequired:
                     //For PinSetupRequired Exception:Ensure PIN is setup on the device
                     //Either use gpedit.msc or set reg key
                     //This setting can be enabled by creating the AllowDomainPINLogon REG_DWORD value under the HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System Registry key and setting it to 1.
                     await new MessageDialog("Please setup PIN for your device and try again.").ShowAsync();
-                    return;
-                }
-
-                if (registration.Status == SecondaryAuthenticationFactorRegistrationStatus.CanceledByUser) {
-                    return;
-                }
-            }
-            else {
-                Debug.WriteLine("Device Registration Started!");
-
-                var deviceConfigData = device.GetConfigData();
-
-                await registration.Registration.FinishRegisteringDeviceAsync(deviceConfigData);
-
-                await RefreshDeviceList();
-            }
-        }
-
-
-        private async void UnregisterDevice_Click(object sender, RoutedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(SelectedDeviceId)) {
-                //InfoList.Items.Add("Unregister a device:");
-
-                await SecondaryAuthenticationFactorRegistration.UnregisterDeviceAsync(SelectedDeviceId);
-
-                //InfoList.Items.Add("Device unregistration is completed.");
-
-                await RefreshDeviceList();
+                    break;
+                case SecondaryAuthenticationFactorRegistrationStatus.CanceledByUser:
+                    // ..
+                    break;
             }
         }
 
@@ -111,7 +113,6 @@ namespace WinHallo.AutoLogin {
         {
             RegisterTask();
         }
-
 
         private async void RegisterTask()
         {
@@ -145,30 +146,36 @@ namespace WinHallo.AutoLogin {
 
                 var register = builder.Register();
 
-                register.Progress += (sender, args) => {
-                    //// Handle background task progress.
-                    //if (args.Progress == 1) {
-                    //    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                    //        Debug.WriteLine("Background task is started.");
-                    //    });
-                    //}
-                };
-                register.Completed += (sender, args) => {
-                    Debug.WriteLine("Background task registration is completed.");
-
-                    _ = CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                        TaskRegistered.Visibility = Visibility.Visible;
-                    });
-                };
-
                 TaskRegistered.Visibility = Visibility.Visible;
             }
         }
 
-
         private void DeviceListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SelectedDevice.Text = SelectedDeviceId = DeviceListBox.SelectedItem?.ToString() ?? string.Empty;
+            if (DeviceListBox.SelectedItem is ListDevice device) {
+                SelectedDeviceId = device.DeviceId;
+                SelectedDeviceName.Text = device.Name;
+                SelectedDevice.Text = device.DeviceId;
+            }
+            else {
+                SelectedDeviceName.Text = "No Device Selected";
+                SelectedDevice.Text = "Please add and select a Device";
+            }
         }
+    }
+
+    internal class ListDevice {
+        public string DeviceId { get; set; }
+        public string Name { get; set; }
+        public ICommand RemoveDeviceCommand { get; set; }
+    }
+
+    internal class Command<T> : ICommand {
+        private readonly Func<T, Task> _action;
+        public Command(Func<T, Task> action) => _action = action;
+        public static Command<T> From(Func<T, Task> action) => new Command<T>(action);
+        public void Execute(object parameter) => _action((T) parameter);
+        public bool CanExecute(object parameter) => true;
+        public event EventHandler CanExecuteChanged;
     }
 }

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Security.Cryptography;
@@ -10,18 +8,24 @@ using Windows.Storage.Streams;
 
 namespace WinHallo.AutoLogin.Tasks {
     public sealed class AutoLoginDevice {
-        public string DeviceId { get; } = "6a2877cd-8706-4e0c-bb78-181391ad8100";
+        public string DeviceId { get; set; }
 
-        public string FriendlyName { get; } = "Test Simulator";
-        public string ModelNumber { get; } = "Sample A1";
+        public string FriendlyName { get; set; }
+        public string ModelNumber { get; set; }
 
-        public IBuffer AuthKey { get; }
-        public IBuffer DeviceKey { get; }
+        public IBuffer AuthKey { get; set; }
+        public IBuffer DeviceKey { get; set; }
 
-        public AutoLoginDevice()
+
+        public static AutoLoginDevice NewRandomDevice(string name, string model)
         {
-            DeviceKey = CryptographicBuffer.DecodeFromHexString("1820614efeb71dbaebc315801a2782df26c236e0395f24fbe96344785fbe1a35");
-            AuthKey = CryptographicBuffer.DecodeFromHexString("ad76bd149e4762dcd36725f2a5b86d0e5fd1058f7670415b9b5088354d1dd07f");
+            return new AutoLoginDevice {
+                DeviceId = Guid.NewGuid().ToString(),
+                DeviceKey = CryptographicBuffer.GenerateRandom(32),
+                AuthKey = CryptographicBuffer.GenerateRandom(32),
+                FriendlyName = name,
+                ModelNumber = model,
+            };
         }
 
 
@@ -34,7 +38,6 @@ namespace WinHallo.AutoLogin.Tasks {
 
 
         /// <summary>
-        /// May not take longer then 20sec
         /// In real world, you would need to take this nonce and send to companion device to perform an HMAC operation with it
         /// You will have only 20 second to get the HMAC from the companion device
         /// </summary>

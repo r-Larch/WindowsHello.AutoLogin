@@ -7,41 +7,75 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300" />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
+    <ScrollViewer HorizontalScrollBarVisibility="Auto">
+        <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+            <StackPanel>
 
-        <StackPanel>
-            <Button x:Name="RegisterDevice" Content="Step 1 Register Device" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Margin="5" Click="RegisterDevice_Click" />
+                <Button Content="Add New Device" HorizontalAlignment="Left"
+                    VerticalAlignment="Top" Margin="20" Click="RegisterDevice_Click" />
 
-            <Button x:Name="RegisterBgTask" Content="Step 2 Register BGTask" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Margin="5" Click="RegisterBgTask_Click" />
+                <ListView SelectionChanged="DeviceListBox_OnSelectionChanged"
+                      SelectedItem="{x:Bind SelectedDeviceId}"
+                      x:Name="DeviceListBox" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                      VerticalContentAlignment="Stretch">
 
-            <Button x:Name="UnregisterDevice" Content="Unregister Device" HorizontalAlignment="Left"
-                    VerticalAlignment="Top" Margin="5" Click="UnregisterDevice_Click" />
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:Name="TripleLineDataTemplate" x:DataType="local:ListDevice">
+                            <Grid>
+                                <StackPanel Padding="10" AutomationProperties.Name="{x:Bind DeviceId}">
+                                    <TextBlock Text="{x:Bind Name}" Style="{ThemeResource BaseTextBlockStyle}"
+                                           Margin="0,4,0,0" />
+                                    <TextBlock Text="{x:Bind DeviceId}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Opacity=".8" Margin="0,4,0,0" />
 
-            <TextBlock Margin="10">Select Device:</TextBlock>
-            <ListBox SelectionChanged="DeviceListBox_OnSelectionChanged"
-                SelectedItem="{x:Bind SelectedDeviceId}"
-                x:Name="DeviceListBox" HorizontalAlignment="Left" VerticalAlignment="Top" Height="400px" />
-        </StackPanel>
+                                </StackPanel>
 
-        <StackPanel Grid.Column="1" Padding="10">
 
-            <TextBlock>Using Device: </TextBlock>
-            <TextBlock x:Name="SelectedDevice" />
+                                <Button Margin="0 2 -10 0" Padding="5" Background="Transparent"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding RemoveDeviceCommand}" CommandParameter="{Binding}">
+                                    <SymbolIcon Symbol="Delete" />
+                                </Button>
 
-            <TextBlock x:Name="TaskRegistered" Foreground="Green" Visibility="Collapsed">
-                Task Registered
-            </TextBlock>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
 
-            <TextBlock x:Name="ErrorMsg" Foreground="Red" Visibility="Collapsed">
-                Error: No Device Selected!
-            </TextBlock>
+                </ListView>
 
-        </StackPanel>
-    </Grid>
+                <StackPanel Margin="20">
+                    <TextBlock FontSize="25" Margin="0 0 0 10">Using Device:</TextBlock>
+
+                    <StackPanel Margin="5 0 0 20">
+                        <TextBlock x:Name="SelectedDeviceName" Style="{ThemeResource BaseTextBlockStyle}"
+                               Margin="0,4,0,0" />
+                        <TextBlock x:Name="SelectedDevice" Style="{ThemeResource CaptionTextBlockStyle}"
+                               Opacity=".8" Margin="0,4,0,0" />
+                    </StackPanel>
+
+                    <Button Content="Register BGTask" HorizontalAlignment="Left"
+                        VerticalAlignment="Top" Margin="0 5 0 0" Click="RegisterBgTask_Click" />
+
+                    <StackPanel Margin="0 20 0 0">
+                        <TextBlock x:Name="TaskRegistered" Foreground="Green" Visibility="Collapsed">
+                        Task Registered
+                        </TextBlock>
+
+                        <TextBlock x:Name="ErrorMsg" Foreground="Red" Visibility="Collapsed">
+                        Error: No Device Selected!
+                        </TextBlock>
+                    </StackPanel>
+
+                </StackPanel>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+
 </Page>
